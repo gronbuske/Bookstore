@@ -4,6 +4,7 @@ using System.Runtime.Serialization;
 
 namespace BookStoreImplementation
 {
+    //Implementation of IBook Interface for the backend of bookstore
     [DataContract]
     public class Book : IBook
     {

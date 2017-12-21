@@ -19,6 +19,7 @@ namespace BookStoreImplementation
             FillBookListFromWeb(BOOK_LIST_ADRESS);
         }
 
+        //Implementation of IBookStoreService:GetBooksAsync, returns search result as a task
         public Task<IEnumerable<IBook>> GetBooksAsync(string searchString)
         {
             return new Task<IEnumerable<IBook>>(() => GetBooks(searchString));
@@ -27,6 +28,8 @@ namespace BookStoreImplementation
         //Simple search function that checks if any book in the list contains any of the words in the searchstring in either title or author
         private IEnumerable<IBook> GetBooks(string searchString)
         {
+            if (searchString == null)
+                return null;
             BookList returnList = new BookList();
             char[] delimiters = { ' ', ',', '.', ':', '\t', '-', '+' };
             string[] searchWords = searchString.Split(delimiters);
@@ -65,6 +68,7 @@ namespace BookStoreImplementation
             }
         }
 
+        //Removes one book from stock, returns false if book is already out of stock
         public bool BuyBook(IBook book)
         {
             foreach(Book b in books)

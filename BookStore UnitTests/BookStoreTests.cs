@@ -5,7 +5,7 @@ using BookStoreImplementation;
 namespace BookStore_UnitTests
 {
     [TestClass]
-    public class UnitTest1
+    public class BookStoreTests
     {
         Random rand;
         BookstoreService service;

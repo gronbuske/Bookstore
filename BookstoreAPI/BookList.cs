@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 namespace BookStoreImplementation
 {
+    //IEnumerable list of Book-objects
     [JsonObject]
     class BookList : IEnumerable<Book>
     {

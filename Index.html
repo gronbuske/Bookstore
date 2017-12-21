@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>
+        Simple Bookstore
+    </title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial;
+        }
+
+        .topnav {
+            overflow: hidden;
+            background-color: #e9e9e9;
+        }
+
+            .topnav a {
+                float: left;
+                display: block;
+                color: black;
+                text-align: center;
+                padding: 14px 16px;
+                text-decoration: none;
+                font-size: 17px;
+            }
+
+                .topnav a:hover {
+                    background-color: #ddd;
+                    color: black;
+                }
+
+                .topnav a.active {
+                    background-color: #2196F3;
+                    color: white;
+                }
+
+            .topnav .search-container {
+                float: right;
+            }
+
+            .topnav input[type=text] {
+                padding: 6px;
+                margin-top: 8px;
+                font-size: 17px;
+                border: none;
+            }
+
+            .topnav .search-container button {
+                float: right;
+                padding: 6px;
+                margin-top: 8px;
+                margin-right: 16px;
+                background: #ddd;
+                font-size: 17px;
+                border: none;
+                cursor: pointer;
+            }
+
+                .topnav .search-container button:hover {
+                    background: #ccc;
+                }
+
+        @media screen and (max-width: 600px) {
+            .topnav .search-container {
+                float: none;
+            }
+
+                .topnav a, .topnav input[type=text], .topnav .search-container button {
+                    float: none;
+                    display: block;
+                    text-align: left;
+                    width: 100%;
+                    margin: 0;
+                    padding: 14px;
+                }
+
+            .topnav input[type=text] {
+                border: 1px solid #ccc;
+            }
+        }
+    </style>
+</head>
+<body>
+    <script>
+        var url = "http://localhost:62705";
+        var urlAddSearch = "/api/search";
+        var urlAddOrder = "/api/order";
+
+        //Lists for search and cart
+        var searchedBooks = null;
+        var kundvagn = {};
+
+        //Current value of cart
+        var totalPrice = 0;
+
+        //Sends GET request to backend for searching after all books containing a certain search string
+        function search()
+        {
+            event.preventDefault();
+            var searchString = "searchString=" + document.getElementById("idSearchBox").value;
+            var xmlHttp = new XMLHttpRequest();
+            xmlHttp.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200) {
+                    searchedBooks = JSON.parse(this.responseText);
+                    printSearchList();
+                }
+            };
+            xmlHttp.open("GET", url + urlAddSearch + "?" + searchString, true);
+            xmlHttp.send();
+        }
+
+        //Prints all books that was returned from function search()
+        function printSearchList()
+        {
+            var arr = searchedBooks;
+            var searchContents = "";
+            for (var i = 0; i < arr.books.length; i++) {
+                searchContents += "<p><b>" + arr.books[i].Author + " </b>" + arr.books[i].Title + " <i>" + arr.books[i].Price +
+                    "kr </i><button type=\"button\" value=\"" + i + "\" id=\"idAdd" + i +
+                    "\")\">Lägg i kundvagn</button> </p>";
+            }
+            document.getElementById("idSearch").innerHTML = searchContents;
+            for (var i = 0; i < arr.books.length; i++) {
+                document.getElementById("idAdd" + i).addEventListener("click", function () { addToOrder(this.value) });
+            }
+        }
+
+        //Prints all objects in users cart
+        function printKundvagn()
+        {
+            var arr = searchedBooks.books;
+            var contents = "";
+            totalPrice = 0;
+            for (key in kundvagn) {
+                contents += "<p><b>" + kundvagn[key].Author + " </b>" + kundvagn[key].Title + " <i>" + kundvagn[key].Price +
+                    "kr </i><button type=\"button\" value=\"" + key + "\" id=\"idRemove" + key +
+                    "\">Ta bort från kundvagn</button> </p>";
+                totalPrice += kundvagn[key].Price;
+            }
+            contents += "<p>Summa: " + totalPrice + " </p>";
+            document.getElementById("idWagon").innerHTML = contents;
+            for (key in kundvagn) {
+                document.getElementById("idRemove" + key).addEventListener("click", function () { removeFromOrder(this.value) });
+            }
+        }
+
+        //Adds book to cart from searches
+        function addToOrder(id)
+        {
+            kundvagn[id] = searchedBooks.books[id];
+            printKundvagn();
+        }
+
+        //Removes book from cart
+        function removeFromOrder(id)
+        {
+            delete kundvagn[id];
+            printKundvagn();
+        }
+
+        //Sends POST request to server trying to order all books in cart, returns the books that was out of stock
+        function sendOrder()
+        {
+            var orderList = { books: [] };
+            for (key in kundvagn)
+            {
+                orderList.books.push(kundvagn[key]);
+            }
+            var xmlHttp = new XMLHttpRequest();
+            xmlHttp.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200) {
+                    var returnedBooks = JSON.parse(this.responseText);
+                    printOrderResults(returnedBooks);
+                }
+            };
+            xmlHttp.open("POST", url + urlAddOrder, true);
+            xmlHttp.setRequestHeader("Content-Type", "application/json");
+            xmlHttp.send(JSON.stringify(orderList));
+        }
+
+        //Prints the books that could not be ordered
+        function printOrderResults(returnedBooks)
+        {
+            var resultText = "";
+            var sumOrder = totalPrice;
+            if (returnedBooks.books.length == 0)
+            {
+                resultText += "Order lyckades, alla varor beställdes!"
+            }
+            else
+            {
+                resultText += "<p><b>Ajaj, följande varor har tagit slut på lagret: </b></p>";
+                for (i in returnedBooks.books)
+                {
+                    console.log(returnedBooks.books[i]);
+                    resultText += "<p><b>" + returnedBooks.books[i].Author + " </b>" + returnedBooks.books[i].Title + "</p>";
+                    sumOrder -= returnedBooks.books[i].Price;
+                }
+            }
+            resultText += "<p>Total ordersumma: " + sumOrder + "kr </p>";
+            document.getElementById("idOrderResult").innerHTML = resultText;
+        }
+    </script>
+
+    <div class="topnav">
+        <div class="search-container">
+            <form onsubmit="search()">
+                <input type="text" placeholder="Search.." name="searchString" id="idSearchBox">
+                <button type="submit">Submit</button>
+            </form>
+        </div>
+    </div>
+    <div style="padding-left:16px">
+        <h2>Sökresultat</h2>
+        <div id="idSearch"></div>
+    </div>
+    <div style="padding-left:16px">
+        <h2>Kundvagn</h2>
+        <div id="idWagon"></div>
+    </div>
+    <button onclick="sendOrder()" type="submit">Skicka Order</button>
+    <div id="idOrderResult"></div>
+
+</body>
+</html>
